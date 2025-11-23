@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Matches - DatingApp{% endblock %}
+
+{% block extra_css %}
+<style>
+    .matches-container {
+        background: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .matches-container h1 {
+        margin-bottom: 30px;
+        color: #333;
+    }
+    
+    .match-list {
+        list-style: none;
+    }
+    
+    .match-item {
+        padding: 20px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s;
+    }
+    
+    .match-item:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .match-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        margin-right: 15px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    
+    .match-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .match-info {
+        flex: 1;
+    }
+    
+    .match-info h3 {
+        margin: 0 0 5px 0;
+        color: #333;
+    }
+    
+    .match-info p {
+        margin: 0;
+        color: #666;
+        font-size: 13px;
+    }
+    
+    .match-item a {
+        background: #667eea;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.3s;
+    }
+    
+    .match-item a:hover {
+        background: #5568d3;
+    }
+    
+    .empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+    
+    .empty p {
+        margin-bottom: 20px;
+    }
+    
+    .empty a {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 10px 30px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.3s;
+    }
+    
+    .empty a:hover {
+        background: #5568d3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="matches-container">
+    <h1>💕 Your Matches</h1>
+    
+    {% if matches %}
+        <ul class="match-list">
+            {% for match in matches %}
+                <li class="match-item">
+                    <div class="match-avatar">
+                        {% if match['other_photo_url'] %}
+                            <img src="{{ match['other_photo_url'] }}" alt="{{ match['other_username'] }}">
+                        {% else %}
+                            {{ match['other_username'][0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div class="match-info">
+                        <h3>{{ match['other_username'] }}</h3>
+                        <p>Matched on {{ match['created_at'] }}</p>
+                    </div>
+                    <a href="/chat/{{ match['id'] }}">Message</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty">
+            <p>No matches yet!</p>
+            <a href="/discover">Start Swiping</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

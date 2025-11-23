@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - DatingApp{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        background: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .profile-container h1 {
+        margin-bottom: 30px;
+        color: #333;
+    }
+    
+    .profile-photo {
+        width: 100%;
+        max-width: 300px;
+        height: 300px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 48px;
+    }
+    
+    .profile-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .photo-upload {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+    
+    .photo-upload label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    
+    .photo-upload input[type="file"] {
+        display: block;
+        margin-bottom: 10px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .btn-save {
+        flex: 1;
+        padding: 12px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .btn-save:hover {
+        background: #5568d3;
+    }
+    
+    .btn-delete {
+        flex: 1;
+        padding: 12px;
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .btn-delete:hover {
+        background: #ff5252;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        max-width: 500px;
+        text-align: center;
+    }
+    
+    .modal-content h2 {
+        color: #ff6b6b;
+        margin-bottom: 15px;
+    }
+    
+    .modal-content p {
+        margin-bottom: 20px;
+        color: #666;
+    }
+    
+    .modal-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+    
+    .modal-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    
+    .modal-btn-cancel {
+        background: #e0e0e0;
+        color: #333;
+    }
+    
+    .modal-btn-cancel:hover {
+        background: #d0d0d0;
+    }
+    
+    .modal-btn-confirm {
+        background: #ff6b6b;
+        color: white;
+    }
+    
+    .modal-btn-confirm:hover {
+        background: #ff5252;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <h1>My Profile</h1>
+    
+    {% if user['photo_url'] %}
+        <div class="profile-photo">
+            <img src="{{ user['photo_url'] }}" alt="Profile Photo">
+        </div>
+    {% else %}
+        <div class="profile-photo">📷</div>
+    {% endif %}
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div class="photo-upload">
+            <label>Upload Profile Photo</label>
+            <input type="file" name="photo" accept="image/*" required>
+            <small>Accepted formats: PNG, JPG, JPEG, GIF (Max 5MB)</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="name" value="{{ user['name'] or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Age</label>
+            <input type="number" name="age" value="{{ user['age'] or '' }}" min="18" max="120">
+        </div>
+        <div class="form-group">
+            <label>Bio</label>
+            <textarea name="bio" rows="4">{{ user['bio'] or '' }}</textarea>
+        </div>
+        <div class="action-buttons">
+            <button type="submit" class="btn-save">Save Profile</button>
+            <button type="button" class="btn-delete" onclick="openDeleteModal()">Delete Account</button>
+        </div>
+    </form>
+</div>
+
+<!-- Delete Account Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h2>⚠️ Delete Account</h2>
+        <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+        <p style="font-size: 14px; color: #999;">All your data including matches, messages, and photos will be permanently deleted.</p>
+        <div class="modal-buttons">
+            <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+            <button class="modal-btn modal-btn-confirm" onclick="confirmDelete()">Yes, Delete My Account</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDeleteModal() {
+    document.getElementById('deleteModal').classList.add('show');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('show');
+}
+
+function confirmDelete() {
+    fetch('/api/delete-account', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Account deleted successfully. Redirecting to login...');
+                window.location.href = '/login';
+            } else {
+                alert('Error deleting account: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting account');
+        });
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target == modal) {
+        modal.classList.remove('show');
+    }
+}
+</script>
+{% endblock %}

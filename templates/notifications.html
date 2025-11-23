@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - DatingApp{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notifications-container {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .notifications-container h1 {
+        text-align: center;
+        color: white;
+        margin-bottom: 30px;
+    }
+    
+    .notification-item {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s;
+        border-left: 4px solid #ff6b6b;
+    }
+    
+    .notification-item.read {
+        background: #f5f5f5;
+        opacity: 0.8;
+        border-left-color: #ccc;
+    }
+    
+    .notification-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    
+    .notification-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .notification-content {
+        flex: 1;
+    }
+    
+    .notification-message {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .notification-time {
+        font-size: 12px;
+        color: #999;
+    }
+    
+    .notification-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .mark-read-btn, .like-back-btn, .reply-btn, .view-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s;
+    }
+    
+    .mark-read-btn {
+        background: #e0e0e0;
+        color: #333;
+    }
+    
+    .mark-read-btn:hover {
+        background: #d0d0d0;
+    }
+    
+    .like-back-btn {
+        background: #ff6b6b;
+        color: white;
+    }
+    
+    .like-back-btn:hover {
+        background: #ff5252;
+    }
+    
+    .reply-btn {
+        background: #667eea;
+        color: white;
+    }
+    
+    .reply-btn:hover {
+        background: #5568d3;
+    }
+    
+    .view-btn {
+        background: #28a745;
+        color: white;
+    }
+    
+    .view-btn:hover {
+        background: #218838;
+    }
+    
+    .no-notifications {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 10px;
+        color: #999;
+    }
+    
+    .reply-form {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+        display: none;
+    }
+    
+    .reply-form.show {
+        display: block;
+    }
+    
+    .reply-form textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-family: inherit;
+        margin-bottom: 8px;
+    }
+    
+    .reply-form button {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+    .reply-form button:hover {
+        background: #5568d3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-container">
+    <h1>📬 Notifications</h1>
+    
+    {% if notifications %}
+        {% set unread_count = notifications | selectattr('is_read', 'equalto', 0) | list | length %}
+        {% if unread_count > 0 %}
+            <p style="text-align: center; color: #ff6b6b; margin-bottom: 20px;">
+                You have <strong>{{ unread_count }}</strong> unread notification{{ 's' if unread_count != 1 else '' }}
+            </p>
+        {% endif %}
+        
+        {% for notification in notifications %}
+            <div class="notification-item {% if notification['is_read'] %}read{% endif %}">
+                <div class="notification-avatar">
+                    {% if notification['photo_url'] %}
+                        <img src="{{ notification['photo_url'] }}" alt="{{ notification['name'] }}">
+                    {% else %}
+                        {% if notification['name'] %}
+                            {{ notification['name'][0].upper() }}
+                        {% else %}
+                            👤
+                        {% endif %}
+                    {% endif %}
+                </div>
+                
+                <div class="notification-content">
+                    <div class="notification-message">
+                        {% if notification['type'] == 'match' %}
+                            🎉 <strong>You have a new match!</strong> You and <strong>{{ notification['name'] or notification['username'] }}</strong> liked each other.
+                        {% elif notification['type'] == 'like' %}
+                            ❤️ <strong>{{ notification['name'] or notification['username'] }}</strong> liked your profile!
+                        {% elif notification['type'] == 'message' %}
+                            💬 New message from <strong>{{ notification['name'] or notification['username'] }}</strong>
+                        {% else %}
+                            {{ notification['message'] }}
+                        {% endif %}
+                    </div>
+                    <div class="notification-time">
+                        {{ notification['created_at'] | replace('T', ' ') | truncate(16, True, '') }}
+                    </div>
+                    
+                    {% if notification['type'] == 'message' %}
+                        <div class="reply-form" id="replyForm-{{ notification['id'] }}">
+                            <textarea id="replyText-{{ notification['id'] }}" placeholder="Type your reply..."></textarea>
+                            <button onclick="sendReply({{ notification['match_id'] }}, {{ notification['id'] }})">Send Reply</button>
+                            <button style="background: #999; margin-left: 5px;" onclick="toggleReplyForm({{ notification['id'] }})">Cancel</button>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="notification-actions">
+                    {% if not notification['is_read'] %}
+                        <button class="mark-read-btn" onclick="markAsRead({{ notification['id'] }})">
+                            Mark as read
+                        </button>
+                    {% endif %}
+                    
+                    {% if notification['type'] == 'like' %}
+                        <button class="like-back-btn" onclick="likeBack({{ notification['sender_id'] }}, {{ notification['id'] }})">
+                            ❤️ Like Back
+                        </button>
+                    {% endif %}
+                    
+                    {% if notification['type'] == 'message' %}
+                        <button class="reply-btn" onclick="toggleReplyForm({{ notification['id'] }})">
+                            💬 Reply
+                        </button>
+                        <a href="/chat/{{ notification['match_id'] }}" class="view-btn" style="text-decoration: none;">
+                            View Chat
+                        </a>
+                    {% endif %}
+                    
+                    {% if notification['type'] == 'match' %}
+                        <a href="/matches" class="view-btn" style="text-decoration: none;">View Matches</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-notifications">
+            <h2>🔔 No notifications yet</h2>
+            <p>Check back soon! You'll see notifications when someone likes you or when you get a match.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function markAsRead(notificationId) {
+    fetch(`/api/notifications/${notificationId}/read`, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error marking notification as read:', error));
+}
+
+function toggleReplyForm(notificationId) {
+    const form = document.getElementById(`replyForm-${notificationId}`);
+    form.classList.toggle('show');
+    if (form.classList.contains('show')) {
+        document.getElementById(`replyText-${notificationId}`).focus();
+    }
+}
+
+function sendReply(matchId, notificationId) {
+    const text = document.getElementById(`replyText-${notificationId}`).value.trim();
+    
+    if (!text) {
+        alert('Please type a message');
+        return;
+    }
+    
+    fetch(`/api/chat/${matchId}/send`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text: text})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Message sent!');
+            markAsRead(notificationId);
+            location.reload();
+        }
+    })
+    .catch(error => console.error('Error sending message:', error));
+}
+
+function likeBack(userId, notificationId) {
+    fetch(`/api/like/${userId}`, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.match) {
+                alert(data.message);
+                markAsRead(notificationId);
+                location.reload();
+            } else {
+                alert('Liked back!');
+                markAsRead(notificationId);
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error liking back:', error));
+}
+</script>
+{% endblock %}
