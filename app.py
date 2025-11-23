@@ -575,6 +575,14 @@ def api_mark_notification_read(notification_id):
     
     return jsonify({'success': True}), 200
 
+# Initialize database on app startup
+@app.before_request
+def startup():
+    """Initialize database and directories on first request."""
+    if not hasattr(app, 'initialized'):
+        init_db()
+        app.initialized = True
+
 if __name__ == '__main__':
     # Initialize database
     init_db()
