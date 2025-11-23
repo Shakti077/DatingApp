@@ -10,7 +10,7 @@ from PIL import Image
 import io
 
 app = Flask(__name__)
-app.secret_key = 'dating-app-secret-key-change-in-production'
+app.secret_key = os.getenv('SECRET_KEY', 'dating-app-secret-key-change-in-production')
 
 # Upload configuration
 UPLOAD_FOLDER = 'static/uploads'
@@ -579,4 +579,5 @@ if __name__ == '__main__':
     # Initialize database
     init_db()
     # Run app
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    debug_mode = os.getenv('FLASK_ENV') != 'production'
+    app.run(debug=debug_mode, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))

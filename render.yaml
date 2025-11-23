@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: DatingApp
+    runtime: python3
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        value: change-this-to-secure-key-in-production
+    disk:
+      name: database
+      mountPath: /data
+      sizeGB: 1
